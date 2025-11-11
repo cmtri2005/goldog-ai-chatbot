@@ -43,7 +43,7 @@ class ConfigSingleton:
         self.DATASET_NAME: str = os.getenv(
             "DATASET_NAME", "goldog-ai"
         )  # Dynamic from environment
-        self.CHROMA_COLLECTION_NAME: str = f"rag-pipeline-{self.DATASET_NAME}"
+        self.CHROMA_COLLECTION_NAME: str = f"rag-{self.DATASET_NAME}"
         self.CHROMA_PERSIST_DIR: str = str(
             PROJECT_ROOT / "infra" / "vector_stores" / "storage"
         )

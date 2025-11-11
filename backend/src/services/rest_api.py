@@ -1,4 +1,4 @@
-from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage
+from langchain_core.messages import BaseMessage, ToolMessage
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 from src.services.base import BaseGenService
@@ -18,14 +18,7 @@ def build_context(messages: List[BaseMessage]) -> str:
 
 
 class RestAPIGenService(BaseGenService):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._session_store: dict[str, ChatMessageHistory] = {}
-
-        self.chat_chain = RunnableWithMessageHistory(
-            self.llm_with_tools,
-            get_session_history,
-        )
+    """Generator service for REST API"""
 
     async def _initial_llm_call(
         self,
@@ -34,15 +27,16 @@ class RestAPIGenService(BaseGenService):
         session_id: str | None = None,
         user_id: str | None = None,
     ):
-        chat_hist_str = "\n".join(
+        # Format chat history to be included in the prompt
+        formatted_history = "\n".join(
             f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history
         )
+        # Build chat messages from the prompt template
         messages = self.prompt_userinput.format_messages(
-            question=question, chat_history=chat_hist_str
+            question=question, chat_history=formatted_history
         )
-        ai_msg = await self.chat_chain.ainvoke(
+        ai_msg = await self.llm_with_tools.ainvoke(
             messages,
-            config={"configurable": {"session_id": session_id or "default"}},
         )
 
         return ai_msg, messages
@@ -54,6 +48,7 @@ class RestAPIGenService(BaseGenService):
         session_id: str | None = None,
         user_id: str | None = None,
     ):
+        # Phase 1: Initial LLM call with chat history
         ai_msg, messages = await self._initial_llm_call(
             question, chat_history, session_id, user_id
         )
@@ -66,9 +61,11 @@ class RestAPIGenService(BaseGenService):
         tool_calls = ai_msg.additional_kwargs.get("tool_calls", [])
 
         if not tool_calls:
+            # No tool calls, return respone directly
             answer = self.clear_think.sub("", ai_msg.content).strip()
             return False, answer
 
+        # Phase 2: Executed tools
         messages = await self._execute_tools(tool_calls, messages, session_id, user_id)
 
         return True, messages
@@ -81,28 +78,23 @@ class RestAPIGenService(BaseGenService):
         session_id: str | None = None,
         user_id: str | None = None,
     ):
-        context = build_context(messages)
+        """Phase 3: RAG generation with context from tools"""
+        context_str = build_context(messages)
 
+        # RAG prompt với context
         prompt = self.prompt_rag.format(
             chat_history="\n".join(
                 f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history
             ),
             question=question,
-            context=context,
+            context=context_str,
         )
-        rag_messages = [SystemMessage(content=prompt)]
-        raw_msg = await self.chat_chain.ainvoke(
-            rag_messages,
-            config={"configurable": {"session_id": session_id or "default"}},
-        )
-        content = (
-            raw_msg.content
-            if isinstance(raw_msg.content, str)
-            else str(raw_msg.content)
-        )
-        answer = self.clear_think.sub("", content).strip()
 
-        save_message(session_id, "ai", answer)
+        # Final LLM call - dùng LLM không có tools để đảm bảo chỉ trả lời, không gọi tool
+        raw = await self.llm_with_tools.ainvoke(prompt)
+
+        content = raw.content if isinstance(raw.content, str) else str(raw.content)
+        answer = self.clear_think.sub("", content).strip()
 
         return answer
 
@@ -119,10 +111,9 @@ class RestAPIGenService(BaseGenService):
             )
 
             if not has_tools:
-                # Không có tools - trả về answer trực tiếp
                 return result
 
-            # Có tools - tiếp tục với RAG prompt
+            # Tools exist
             messages = result
             answer = await self._rag_generation(
                 messages=messages,
@@ -135,5 +126,5 @@ class RestAPIGenService(BaseGenService):
             return answer
 
         except Exception as e:
-            logger.error(f"Error in generate_rest_api(): {e}")
+            logger.error(f"Error in generate(): {e}")
             raise

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class SearchArgs(BaseModel):
@@ -15,8 +15,8 @@ class SearchArgs(BaseModel):
         description="Whether to return the score of the results",
         default=False,
     )
-    metadata_filter: Dict[str, Any] = Field(
-        default_factory=dict,
+    metadata_filter: Optional[Dict[str, Any]] = Field(
+        default=None,
         description=(
             "Optional metadata filter for search. If unused, omit this field; do not send null."
         ),

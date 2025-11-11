@@ -6,7 +6,7 @@ from embed_and_store import DocumentEmbedder
 
 
 DATA_PATH = "data.json"
-COLLECTION_NAME = "rag-pipeline-goldog-ai"
+COLLECTION_NAME = "rag-goldog-ai"
 PERSIST_DIRECTORY = "../backend/infra/vector_stores/storage"
 
 

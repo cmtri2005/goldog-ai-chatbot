@@ -1,8 +1,4 @@
-import os
-import json
-import threading
 from typing import Any, Dict
-from dotenv import dotenv_values
 from pathlib import Path
 from pydantic_settings import BaseSettings
 
@@ -11,8 +7,8 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 class Settings(BaseSettings):
     # Server Configuration
-    HOST: str = "localhost"
-    PORT: int = 8000
+    HOST: str = "0.0.0.0"
+    PORT: int = 8080
     API_V1_STR: str = "/v1"
     DEBUG: bool = True
     ENVIRONMENT: str = "development"

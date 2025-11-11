@@ -10,7 +10,8 @@ from src.constants.prompt import temp_userinput, temp_rag
 
 
 class BaseGenService(ABC):
-    "Base class for REST API"
+    """Base class for REST API"""
+
     def __init__(
         self,
         llm_with_tools: Runnable[LanguageModelInput, BaseMessage],

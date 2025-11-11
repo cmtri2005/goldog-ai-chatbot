@@ -29,7 +29,7 @@ class RagPipeline:
                 "    query (str): the query.\n"
                 "    top_k (int): the number of documents to retrieve.\n"
                 "    with_score (bool): whether to include similarity scores.\n"
-                "    metadata_filter (dict): optional metadata filter. If unused, omit this field; do not send null.\n"
+                "    metadata_filter (dict): filter by metadata.\n"
             ),
             func=self.chroma_client.retrieve_vector,
             args_schema=SearchArgs,
@@ -40,7 +40,8 @@ class RagPipeline:
         self.llm_with_tools = self.llm.bind_tools(list(self.tools.values()))
 
         self.rest_generator_service = RestAPIGenService(
-            llm_with_tools=self.llm_with_tools, tools=self.tools
+            llm_with_tools=self.llm_with_tools,
+            tools=self.tools,
         )
 
     def get_chat_history(self, session_id: str | None = None) -> list[dict]:
