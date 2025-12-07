@@ -4,8 +4,12 @@ from src.infra.vector_stores.chroma_client import ChromaClientService
 from src.schema.retrieval import SearchArgs
 from src.constants.llm_factory import LLMFactory
 from src.config.config import config
+from src.utils.logger import LoggerConfig
+from src.services.chat_history.summarize import SummarizeChatService
+from src.services.chat_history.chat_history import get_session_history
 from langchain.tools import StructuredTool
 
+logger = LoggerConfig(__name__).get()
 
 load_dotenv()
 
@@ -43,9 +47,28 @@ class RagPipeline:
             llm_with_tools=self.llm_with_tools,
             tools=self.tools,
         )
+        self.summarize_chat_service = SummarizeChatService()
 
     def get_chat_history(self, session_id: str | None = None) -> list[dict]:
-        return []
+        """
+        Return chat history as a list of {role, content} dicts.
+
+        The underlying `get_session_history` returns a LangChain ChatMessageHistory,
+        but `RestAPIGenService` expects a plain list of dicts.
+        """
+        if not session_id:
+            return []
+
+        history = get_session_history(session_id)
+
+        messages: list[dict] = []
+        for msg in getattr(history, "messages", []):
+            # LangChain BaseMessage typically has `.type` and `.content`
+            role = getattr(msg, "type", None) or getattr(msg, "role", "")
+            content = getattr(msg, "content", "")
+            messages.append({"role": role, "content": content})
+
+        return messages
 
     async def get_response(
         self,
@@ -53,14 +76,16 @@ class RagPipeline:
         session_id: str | None = None,
         user_id: str | None = None,
     ):
+        # get_chat_history is synchronous; do NOT await it
         chat_history = self.get_chat_history(session_id)
-        output = await self.rest_generator_service.generate_rest_api(
+        response = await self.rest_generator_service.generate_rest_api(
             question=question,
             chat_history=chat_history,
             session_id=session_id,
             user_id=user_id,
         )
-        return output
+        logger.info(f"RAG Response: {response}")
+        return response
 
 
 rag_service = RagPipeline()

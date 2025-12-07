@@ -1,10 +1,10 @@
 from langchain_core.messages import BaseMessage, ToolMessage
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_community.chat_message_histories import ChatMessageHistory
 from src.services.base import BaseGenService
-from src.services.chat_history import save_message, get_session_history
-from src.utils.logger import logger
+from src.services.chat_history.chat_history import save_message
+from src.utils.logger import LoggerConfig
 from typing import List
+
+logger = LoggerConfig(__name__).get()
 
 
 def build_context(messages: List[BaseMessage]) -> str:
@@ -35,9 +35,11 @@ class RestAPIGenService(BaseGenService):
         messages = self.prompt_userinput.format_messages(
             question=question, chat_history=formatted_history
         )
+        logger.info(f"Messages: {messages}")
         ai_msg = await self.llm_with_tools.ainvoke(
             messages,
         )
+        logger.info(f"AI Message: {ai_msg}")
 
         return ai_msg, messages
 
@@ -53,13 +55,8 @@ class RestAPIGenService(BaseGenService):
             question, chat_history, session_id, user_id
         )
         messages.append(ai_msg)
-
-        # Save to db
-        save_message(session_id, "human", question)
-        save_message(session_id, "ai", ai_msg.content)
-
         tool_calls = ai_msg.additional_kwargs.get("tool_calls", [])
-
+        logger.info(f"Tool calls: {tool_calls}")
         if not tool_calls:
             # No tool calls, return respone directly
             answer = self.clear_think.sub("", ai_msg.content).strip()
@@ -90,11 +87,11 @@ class RestAPIGenService(BaseGenService):
             context=context_str,
         )
 
-        # Final LLM call - dùng LLM không có tools để đảm bảo chỉ trả lời, không gọi tool
         raw = await self.llm_with_tools.ainvoke(prompt)
 
         content = raw.content if isinstance(raw.content, str) else str(raw.content)
         answer = self.clear_think.sub("", content).strip()
+        logger.info(f"Answer: {answer}")
 
         return answer
 
@@ -122,9 +119,12 @@ class RestAPIGenService(BaseGenService):
                 session_id=session_id,
                 user_id=user_id,
             )
+            # Save to db
+            save_message(session_id, "human", question)
+            save_message(session_id, "ai", answer)
 
             return answer
 
         except Exception as e:
-            logger.error(f"Error in generate(): {e}")
+            logger.error(f"Error to generate REST api: {e}")
             raise

@@ -1,9 +1,8 @@
 import os
-import json
 import threading
-from typing import Any, Dict
 from dotenv import dotenv_values
 from pathlib import Path
+
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 

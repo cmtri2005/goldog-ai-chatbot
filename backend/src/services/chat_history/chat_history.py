@@ -40,7 +40,7 @@ def get_db():
 
 
 def save_message(session_id: str, role: str, content: str):
-    db = next(get_db())
+    db = SessionLocal()
     try:
         session = db.query(Session).filter(Session.session_id == session_id).first()
         if not session:
@@ -53,19 +53,26 @@ def save_message(session_id: str, role: str, content: str):
         db.add(Message(session_id=session.id, role=role, content=content))
         db.commit()
 
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
+        raise e
     finally:
         db.close()
 
 
 def load_session_history(session_id: str) -> BaseChatMessageHistory:
-    db = next(get_db())
+    db = SessionLocal()
     chat_history = ChatMessageHistory()
     try:
         session = db.query(Session).filter(Session.session_id == session_id).first()
         if session:
-            for message in session.messages:
+            messages = (
+                db.query(Message)
+                .filter(Message.session_id == session.id)
+                .order_by(Message.id)
+                .all()
+            )
+            for message in messages:
                 role = (message.role or "").lower()
                 content = message.content or ""
                 if role == "human" or role == "user":
@@ -84,10 +91,5 @@ def load_session_history(session_id: str) -> BaseChatMessageHistory:
     return chat_history
 
 
-store = {}
-
-
 def get_session_history(session_id: str) -> BaseChatMessageHistory:
-    if session_id not in store:
-        store[session_id] = load_session_history(session_id)
-    return store[session_id]
+    return load_session_history(session_id)
