@@ -10,7 +10,7 @@ USERINPUT_TEXT = """
         **Domain Corpus Includes:**
         - Vietnam-specific real estate listings and market data (e.g., from Batdongsan.com.vn, Alonhadat.com.vn, Chotot.com).
         - Price index trends, tax rules, and transaction procedures for property buying, selling, and renting
-        - Articles and analysis on real estate investment in major cities (e.g., Ho Chi Minh City, Thu Duc, Hanoi, Da Nang).
+        - Articles and analysis on real estate investment in major cities (e.g., Ho Chi Minh City).
 
         **Instructions:**
         - Answer clearly and directly when confident.

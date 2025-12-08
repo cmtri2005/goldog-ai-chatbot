@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional
 
 class SearchArgs(BaseModel):
     """Request schema for the retrieval API"""
+
     query: str = Field(
         description="User input",
         default="",

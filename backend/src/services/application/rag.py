@@ -63,7 +63,6 @@ class RagPipeline:
 
         messages: list[dict] = []
         for msg in getattr(history, "messages", []):
-            # LangChain BaseMessage typically has `.type` and `.content`
             role = getattr(msg, "type", None) or getattr(msg, "role", "")
             content = getattr(msg, "content", "")
             messages.append({"role": role, "content": content})
@@ -76,7 +75,6 @@ class RagPipeline:
         session_id: str | None = None,
         user_id: str | None = None,
     ):
-        # get_chat_history is synchronous; do NOT await it
         chat_history = self.get_chat_history(session_id)
         response = await self.rest_generator_service.generate_rest_api(
             question=question,

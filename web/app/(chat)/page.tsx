@@ -1,19 +1,18 @@
 "use client";
 
-import { ChatMockRealEstate } from "@/components/chat-mock-real-estate";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import { ChatRealEstate } from "@/components/chat-real-estate";
 import { generateUUID } from "@/lib/utils";
 
-export default async function Page() {
+export default function Page() {
   const id = generateUUID();
 
   return (
-    <ChatMockRealEstate
+    <ChatRealEstate
       id={id}
       initialChatModel={DEFAULT_CHAT_MODEL}
-      initialVisibilityType="private"
+      initialVisibilityType="public"
       isReadonly={false}
-      key={id}
     />
   );
 }
