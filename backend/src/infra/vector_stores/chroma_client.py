@@ -10,9 +10,18 @@ config = ConfigSingleton()
 def _format_docs(docs: List[Document], scores: List[float] | None = None) -> str:
     formatted = []
     for idx, doc in enumerate(docs):
+        # Content
         content = doc.page_content.strip()
+        # Metadata
+        metadata: Dict[str, Any] = getattr(doc, "metadata", {}) or {}
+        url = metadata.get("url") or metadata.get("source")
+        extra_lines: list[str] = []
+        if url:
+            extra_lines.append(f"[SOURCE_URL]: {url}")
         if scores:
-            content += f" [score={scores[idx]:.4f}]"
+            extra_lines.append(f"[SCORE]: {scores[idx]:.4f}")
+        if extra_lines:
+            content = content + "\n\n" + "\n".join(extra_lines)
         formatted.append(content)
     return "\n\n".join(formatted)
 
@@ -30,6 +39,20 @@ class ChromaClientService:
             persist_directory=str(persist_dir),
             embedding_function=embedding_service,
         )
+
+    def retrieve_docs(
+        self,
+        query: str,
+        top_k: int = 3,
+        metadata_filter: Optional[Dict[str, Any]] = None,
+    ) -> List[Document]:
+        if self.client is None:
+            self.connect()
+
+        docs: List[Document] = self.client.similarity_search(
+            query, k=top_k, filter=(metadata_filter or None)
+        )
+        return docs
 
     def retrieve_vector(
         self,
