@@ -16,9 +16,11 @@ class BaseGenService(ABC):
         self,
         llm_with_tools: Runnable[LanguageModelInput, BaseMessage],
         tools: dict[str, StructuredTool],
+        base_llm: Runnable[LanguageModelInput, BaseMessage] | None = None,
     ):
         self.llm_with_tools = llm_with_tools
         self.tools = tools
+        self.llm = base_llm or llm_with_tools
         self.prompt_userinput = temp_userinput
         self.prompt_rag = temp_rag
         self.clear_think = re.compile(r"<think>[\s\S]*?</think>", re.MULTILINE)

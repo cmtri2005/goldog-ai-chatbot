@@ -1,18 +1,18 @@
 from dotenv import load_dotenv
-from src.services.rest_api import RestAPIGenService
-from src.infra.vector_stores.chroma_client import ChromaClientService
-from src.schema.retrieval import SearchArgs
-from src.constants.llm_factory import LLMFactory
-from src.config.config import config
-from src.utils.logger import LoggerConfig
-from src.services.chat_history.summarize import SummarizeChatService
-from src.services.chat_history.chat_history import get_session_history
 from langchain.tools import StructuredTool
+from src.config.config import config
+from src.constants.llm_factory import LLMFactory
+from src.infra.vector_stores.chroma_client import ChromaClientService
+from src.schema.real_estate import RealEstate
+from src.schema.retrieval import SearchArgs
+from src.services.chat_history.chat_history import get_session_history
+from src.services.chat_history.summarize import SummarizeChatService
+from src.services.rest_api import RestAPIGenService
+from src.utils.logger import LoggerConfig
 
 logger = LoggerConfig(__name__).get()
 
 load_dotenv()
-
 
 class RagPipeline:
     def __init__(self):
@@ -46,15 +46,13 @@ class RagPipeline:
         self.rest_generator_service = RestAPIGenService(
             llm_with_tools=self.llm_with_tools,
             tools=self.tools,
+            base_llm=self.llm,
         )
         self.summarize_chat_service = SummarizeChatService()
 
     def get_chat_history(self, session_id: str | None = None) -> list[dict]:
         """
         Return chat history as a list of {role, content} dicts.
-
-        The underlying `get_session_history` returns a LangChain ChatMessageHistory,
-        but `RestAPIGenService` expects a plain list of dicts.
         """
         if not session_id:
             return []
@@ -74,16 +72,16 @@ class RagPipeline:
         question: str,
         session_id: str | None = None,
         user_id: str | None = None,
-    ):
+    ) -> tuple[str, list[RealEstate]]:
         chat_history = self.get_chat_history(session_id)
-        response = await self.rest_generator_service.generate_rest_api(
+        response, results = await self.rest_generator_service.generate_rest_api(
             question=question,
             chat_history=chat_history,
             session_id=session_id,
             user_id=user_id,
         )
         logger.info(f"RAG Response: {response}")
-        return response
+        return response, results
 
 
 rag_service = RagPipeline()

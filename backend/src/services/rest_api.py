@@ -1,8 +1,13 @@
+import json
+from typing import List
+from groq import BadRequestError
 from langchain_core.messages import BaseMessage, ToolMessage
+from src.constants.prompt import RAG_STRUCTURED_SUFFIX
+from src.schema.real_estate import RealEstate
+from src.schema.response import RagResponse
 from src.services.base import BaseGenService
 from src.services.chat_history.chat_history import save_message
 from src.utils.logger import LoggerConfig
-from typing import List
 
 logger = LoggerConfig(__name__).get()
 
@@ -12,14 +17,12 @@ def build_context(messages: List[BaseMessage]) -> str:
     for m in messages:
         if isinstance(m, ToolMessage):
             tool_chunks.append(str(m.content))
-
     context_str = "\n\n--- Retrieved Documents ---\n\n".join(tool_chunks)
     return context_str
 
 
 class RestAPIGenService(BaseGenService):
     """Generator service for REST API"""
-
     async def _initial_llm_call(
         self,
         question: str,
@@ -36,9 +39,14 @@ class RestAPIGenService(BaseGenService):
             question=question, chat_history=formatted_history
         )
         logger.info(f"Messages: {messages}")
-        ai_msg = await self.llm_with_tools.ainvoke(
-            messages,
-        )
+        try:
+            ai_msg = await self.llm_with_tools.ainvoke(messages)
+        except BadRequestError as e:
+            logger.error(
+                f"Tool calling failed with GROQ, falling back to base LLM: {e}"
+            )
+            ai_msg = await self.llm.ainvoke(messages)
+
         logger.info(f"AI Message: {ai_msg}")
 
         return ai_msg, messages
@@ -74,26 +82,42 @@ class RestAPIGenService(BaseGenService):
         chat_history: list[dict],
         session_id: str | None = None,
         user_id: str | None = None,
-    ):
+    ) -> tuple[str, list[RealEstate]]:
         """Phase 3: RAG generation with context from tools"""
         context_str = build_context(messages)
 
-        # RAG prompt với context
-        prompt = self.prompt_rag.format(
+        # RAG prompt with context
+        base_prompt = self.prompt_rag.format(
             chat_history="\n".join(
                 f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history
             ),
             question=question,
             context=context_str,
         )
+        # Structured prompt
+        final_prompt = f"{base_prompt}\n\n{RAG_STRUCTURED_SUFFIX}"
 
-        raw = await self.llm_with_tools.ainvoke(prompt)
+        # Parse response as structured RAG output
+        llm_response = await self.llm.ainvoke(final_prompt)
+        raw_content = (
+            llm_response.content
+            if isinstance(llm_response.content, str)
+            else str(llm_response.content)
+        )
+        response_text = self.clear_think.sub("", raw_content).strip()
 
-        content = raw.content if isinstance(raw.content, str) else str(raw.content)
-        answer = self.clear_think.sub("", content).strip()
+        try:
+            response_json = json.loads(response_text)
+            rag_output = RagResponse.model_validate(response_json)
+            answer = rag_output.response
+            results = rag_output.result
+        except Exception as e:
+            logger.error(f"Failed to parse structured RAG output as JSON: {e}")
+            answer = response_text
+            results = []
+
         logger.info(f"Answer: {answer}")
-
-        return answer
+        return answer, results
 
     async def generate_rest_api(
         self,
@@ -101,18 +125,19 @@ class RestAPIGenService(BaseGenService):
         chat_history: list[dict],
         session_id: str | None = None,
         user_id: str | None = None,
-    ):
+    ) -> tuple[str, list[RealEstate]]:
         try:
             has_tools, result = await self._create_message(
                 question, chat_history, session_id, user_id
             )
 
             if not has_tools:
-                return result
+                answer = self.clear_think.sub("", str(result)).strip()
+                return answer, []
 
             # Tools exist
             messages = result
-            answer = await self._rag_generation(
+            answer, results = await self._rag_generation(
                 messages=messages,
                 question=question,
                 chat_history=chat_history,
@@ -123,7 +148,7 @@ class RestAPIGenService(BaseGenService):
             save_message(session_id, "human", question)
             save_message(session_id, "ai", answer)
 
-            return answer
+            return answer, results
 
         except Exception as e:
             logger.error(f"Error to generate REST api: {e}")

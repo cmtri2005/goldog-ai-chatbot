@@ -1,5 +1,7 @@
 import uuid
+
 from fastapi import APIRouter, Depends, status
+
 from src.api.rag import get_rag_service
 from src.schema.requests import UserInput
 from src.schema.response import Response
@@ -22,7 +24,12 @@ async def rag_retrieve(
 
     session_id = input.session_id or str(uuid.uuid4())
     user_id = input.user_id or f"user_{str(uuid.uuid4().hex[:8])}"
-    response = await rag_service.get_response(
+    response, results = await rag_service.get_response(
         question=input.user_input, session_id=session_id, user_id=user_id
     )
-    return Response(response=response, session_id=session_id, user_id=user_id)
+    return Response(
+        response=response,
+        result=results,
+        session_id=session_id,
+        user_id=user_id,
+    )
