@@ -56,7 +56,54 @@ RAG_TEXT = """
         **CONTEXT:** {context}
         **QUESTION:** {question}
         ---------------------------------
-        **YOUR FINAL ANSWER:**
+""".strip()
+
+
+RAG_STRUCTURED_SUFFIX = """
+        ### OUTPUT FORMAT (MANDATORY) ###
+
+        You MUST answer strictly in JSON format with the following structure:
+        {
+          "response": "<natural language answer to the user>",
+          "result": [
+            {
+              "title": "...",
+              "address": [
+                {
+                  "street": "...",
+                  "ward": "...",
+                  "district": "...",
+                  "city": "...",
+                  "latitude": 0,
+                  "longitude": 0
+                }
+              ],
+              "description": "...",
+              "propertyType": "...",
+              "transactionType": "...",
+              "legalStatus": "...",
+              "price": 0,
+              "priceUnit": "...",
+              "area": 0,
+              "direction": "...",
+              "images": ["..."],
+              "contactRealtor": {
+                "name": "...",
+                "phone": "...",
+                "zalo": "...",
+                "email": "..."
+              },
+              "source": "https://...",
+              "publishedAt": "2024-01-01T00:00:00Z",
+              "updatedAt": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+
+        Important rules:
+        - If there is no matching real estate, return an empty list for "result".
+        - If a value is unknown, return null or omit that field.
+        - Do NOT include any text before or after the JSON.
 """.strip()
 
 
