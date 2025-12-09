@@ -11,4 +11,24 @@ class Response(BaseModel):
     response: str = Field(
         description="AI respone to user's input. Example: There are n real-estates that match your request. I will provide you the list of real estates."
     )
-    result: List[RealEstate] = Field(description="List of real estates")
+    result: List[RealEstate] = Field(
+        default_factory=list, description="List of real estates"
+    )
+
+
+class RagResponse(BaseModel):
+    """
+    Schema representing the structured output from the RAG LLM.
+    """
+    response: str = Field(
+        description=(
+            "AI response to the user's input. Example: There are n real-estates "
+            "that match your request. I will provide you the list of real estates."
+        )
+    )
+    result: List[RealEstate] = Field(
+        default_factory=list,
+        description=(
+            "List of real estates extracted by the model from the retrieved context."
+        ),
+    )
