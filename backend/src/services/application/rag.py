@@ -9,10 +9,12 @@ from src.services.chat_history.chat_history import get_session_history
 from src.services.chat_history.summarize import SummarizeChatService
 from src.services.rest_api import RestAPIGenService
 from src.utils.logger import LoggerConfig
+import os
 
 logger = LoggerConfig(__name__).get()
 
 load_dotenv()
+
 
 class RagPipeline:
     def __init__(self):
@@ -22,6 +24,7 @@ class RagPipeline:
             llm_provider=LLMFactory.Provider.GROQ,
             config=LLMFactory.Config(model_name=MODEL_NAME, api_key=API_KEY),
         )
+
         self.chroma_client = ChromaClientService()
 
         # Search tool
