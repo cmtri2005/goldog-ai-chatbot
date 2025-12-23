@@ -55,12 +55,12 @@ class BaseGenService(ABC):
         executed_tools = []
 
         for tool_call in tool_calls:
-            name = tool_call["function"]["name"].lower()
+            name = tool_call["name"].lower()
             if name not in self.tools:
                 raise ValueError(f"Unknown tool: {name}")
 
             tool_inst = self.tools[name]
-            payload = json.loads(tool_call["function"]["arguments"])
+            payload = tool_call["args"]
 
             if "tool_calls" in payload:
                 for call_args in payload["tool_calls"]:

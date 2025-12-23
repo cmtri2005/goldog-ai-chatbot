@@ -8,22 +8,27 @@ config = ConfigSingleton()
 
 
 def _format_docs(docs: List[Document], scores: List[float] | None = None) -> str:
-    formatted = []
+    if not docs:
+        return "Không tìm thấy tài liệu phù hợp."
     for idx, doc in enumerate(docs):
-        # Content
+        # Content field
         content = doc.page_content.strip()
-        # Metadata
+        # Metadata field
         metadata: Dict[str, Any] = getattr(doc, "metadata", {}) or {}
-        url = metadata.get("url") or metadata.get("source")
+        
         extra_lines: list[str] = []
-        if url:
-            extra_lines.append(f"[SOURCE_URL]: {url}")
+        
+        # Add all metadata fields
+        for key, value in metadata.items():
+            clean_key = key.upper().replace("_", " ")
+            extra_lines.append(f"[{clean_key}]: {value}")
+
         if scores:
             extra_lines.append(f"[SCORE]: {scores[idx]:.4f}")
+            
         if extra_lines:
             content = content + "\n\n" + "\n".join(extra_lines)
-        formatted.append(content)
-    return "\n\n".join(formatted)
+        return content
 
 
 class ChromaClientService:

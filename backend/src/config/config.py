@@ -31,7 +31,7 @@ class ConfigSingleton:
             "BEDROCK_EMBEDDING_MODEL", "amazon.titan-embed-text-v2:0"
         )
         self.BEDROCK_LLM_MODEL = env.get(
-            "BEDROCK_LLM_MODEL", "meta.llama3-70b-instruct-v1:0"
+            "BEDROCK_LLM_MODEL", "meta.llama3-3-70b-instruct-v1:0"
         )
 
         # GROQ

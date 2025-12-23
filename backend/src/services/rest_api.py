@@ -63,7 +63,7 @@ class RestAPIGenService(BaseGenService):
             question, chat_history, session_id, user_id
         )
         messages.append(ai_msg)
-        tool_calls = ai_msg.additional_kwargs.get("tool_calls", [])
+        tool_calls = ai_msg.tool_calls
         logger.info(f"Tool calls: {tool_calls}")
         if not tool_calls:
             # No tool calls, return respone directly
@@ -106,6 +106,12 @@ class RestAPIGenService(BaseGenService):
         )
         response_text = self.clear_think.sub("", raw_content).strip()
 
+        # Cleaning
+        #response_text = response_text.replace("```json", "").replace("```", "")
+        
+        print("*" * 30)
+        print(response_text)
+        print("*" * 30)
         try:
             response_json = json.loads(response_text)
             rag_output = RagResponse.model_validate(response_json)
@@ -117,6 +123,7 @@ class RestAPIGenService(BaseGenService):
             results = []
 
         logger.info(f"Answer: {answer}")
+        logger.info(f"Results: {results}")
         return answer, results
 
     async def generate_rest_api(
