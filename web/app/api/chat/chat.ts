@@ -7,9 +7,10 @@ export interface ChatRequest {
 }
 
 export interface ChatResponse {
-    response: string;
     session_id: string;
     user_id: string;
+    response: string;
+    result?: any[];
 }
 
 

@@ -107,6 +107,18 @@ export function RealEstateMap({
         scrollWheelZoom: true,
       });
 
+      if (properties.length === 1) {
+        map.setView(
+          [properties[0].lat, properties[0].lng],
+          14
+        );
+      } else {
+        const bounds = L.latLngBounds(
+          properties.map(p => [p.lat, p.lng])
+        );
+        map.fitBounds(bounds, { padding: [40, 40] });
+      }
+
       // Add OpenStreetMap tiles
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
@@ -129,7 +141,7 @@ export function RealEstateMap({
             <h3 style="font-weight: bold; font-size: 14px; margin: 0;">${property.name}</h3>
             <p style="font-size: 12px; color: #666; margin: 4px 0;">${property.location}</p>
             <div style="margin: 8px 0; font-size: 12px;">
-              <div style="font-weight: bold;">$${property.price}M</div>
+              <div style="font-weight: bold;">$${property.price.toLocaleString('vi')}VNĐ</div>
               <div style="color: #666;">${property.area} m²</div>
               <div style="color: #666; margin-top: 4px;">${property.description}</div>
             </div>
@@ -191,19 +203,17 @@ function PropertyCard({
       className="border border-gray-200 rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow bg-white"
       onClick={onClick}
     >
-      <Image
+      <img
         src={property.imageUrl}
         alt={property.name}
         className="w-full h-32 object-cover rounded mb-2"
-        width={400}
-        height={200}
       />
       <h3 className="font-bold text-sm line-clamp-2">{property.name}</h3>
       <p className="text-xs text-gray-600 mb-2">{property.location}</p>
       <div className="space-y-1 text-xs">
         <div className="flex items-center gap-1">
           <DollarSign className="w-3 h-3" />
-          <span className="font-bold">{property.price}M</span>
+          <span className="font-bold">{property.price.toLocaleString('vi-VN')} VNĐ</span>
         </div>
         <div className="flex items-center gap-1">
           <Ruler className="w-3 h-3" />

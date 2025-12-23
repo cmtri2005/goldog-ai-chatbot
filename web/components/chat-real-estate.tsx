@@ -16,7 +16,7 @@ import { getChatResponse } from "@/app/api/chat/chat";
 
 // Lazy load MockRealEstateDisplay
 const MockRealEstateDisplay = lazy(() =>
-  import("./mock-real-estate-display").then((mod) => ({
+  import("./real-estate-display").then((mod) => ({
     default: mod.MockRealEstateDisplay,
   }))
 );
@@ -51,6 +51,28 @@ export function ChatRealEstate({
     return `user_${generateUUID().slice(0, 8)}`;
   });
 
+  /* Helper to map backend result to frontend property */
+  const mapToRealEstateProperty = (item: any): RealEstateProperty => {
+    const address = item.address?.[0] || {};
+    return {
+      id: generateUUID(),
+      lat: address.latitude || 0,
+      lng: address.longitude || 0,
+      type: item.propertyType || "Nhà ở",
+      name: item.title || "Bất động sản",
+      imageUrl: item.images?.[0] || "https://images.unsplash.com/photo-1600596542815-2a4d9f87b304?q=80&w=1000&auto=format&fit=crop",
+      location: `${address.street || ""}, ${address.ward || ""}, ${address.district || ""}, ${address.city || ""}`.replace(/^, | , /g, ""),
+      price: item.price || 0,
+      area: item.area || 0,
+      description: item.description || "",
+      typeDisplay: item.propertyType || "Nhà ở",
+      legalStatus: item.legalStatus,
+      transactionType: item.transactionType,
+      direction: item.direction,
+      images: item.images || [],
+    };
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim()) return;
 
@@ -80,6 +102,15 @@ export function ChatRealEstate({
         setSessionId(response.session_id);
       }
 
+      // Handle Real Estate Data from Backend
+      const hasRealEstateData = response.result && response.result.length > 0;
+
+      if (hasRealEstateData) {
+        const mappedProperties = response.result!.map(mapToRealEstateProperty);
+        setProperties(mappedProperties);
+        setIsMapVisible(true);
+      }
+
       // Add AI response message
       const assistantMessage: ChatMessage = {
         id: generateUUID(),
@@ -92,6 +123,7 @@ export function ChatRealEstate({
         ],
         metadata: {
           createdAt: new Date().toISOString(),
+          showMapButton: hasRealEstateData,
         },
       } as ChatMessage;
 
@@ -145,6 +177,15 @@ export function ChatRealEstate({
         setSessionId(response.session_id);
       }
 
+      // Handle Real Estate Data from Backend
+      const hasRealEstateData = response.result && response.result.length > 0;
+
+      if (hasRealEstateData) {
+        const mappedProperties = response.result!.map(mapToRealEstateProperty);
+        setProperties(mappedProperties);
+        setIsMapVisible(true);
+      }
+
       const assistantMessage: ChatMessage = {
         id: generateUUID(),
         role: "assistant",
@@ -156,23 +197,13 @@ export function ChatRealEstate({
         ],
         metadata: {
           createdAt: new Date().toISOString(),
+          showMapButton: hasRealEstateData,
         },
       } as ChatMessage;
 
       setMessages((prev: ChatMessage[]) => [...prev, assistantMessage]);
       setStatus("ready");
 
-      // Check if response contains real estate keywords and show map
-      const realEstateKeywords = ["bất động sản", "dự án", "nhà", "đất", "căn hộ"];
-      const shouldShowMap = realEstateKeywords.some((keyword) =>
-        response.response.toLowerCase().includes(keyword)
-      );
-
-      if (shouldShowMap) {
-        const result = filterRealEstate({ type: "all" });
-        setProperties(result.properties);
-        setIsMapVisible(true);
-      }
     } catch (error) {
       console.error("Error calling chat API:", error);
 
@@ -210,7 +241,7 @@ export function ChatRealEstate({
           isReadonly={isReadonly}
           messages={messages}
           onShowRealEstateMap={() => setIsMapVisible(true)}
-          regenerate={async () => {}}
+          regenerate={async () => { }}
           selectedModelId={currentModelId}
           setMessages={setMessages}
           status={status}

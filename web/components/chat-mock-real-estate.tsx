@@ -15,7 +15,7 @@ import { Button } from "./ui/button";
 
 // Lazy load MockRealEstateDisplay
 const MockRealEstateDisplay = lazy(() =>
-  import("./mock-real-estate-display").then((mod) => ({
+  import("./real-estate-display").then((mod) => ({
     default: mod.MockRealEstateDisplay,
   }))
 );
@@ -138,7 +138,7 @@ export function ChatMockRealEstate({
           isReadonly={isReadonly}
           messages={messages}
           onShowRealEstateMap={() => setIsMapVisible(true)}
-          regenerate={async () => {}}
+          regenerate={async () => { }}
           selectedModelId={currentModelId}
           setMessages={setMessages}
           status={status}
