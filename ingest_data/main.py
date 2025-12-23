@@ -2,10 +2,14 @@ import sys
 import traceback
 from pathlib import Path
 from load_and_chunk import LoadAndChunk
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from embed_and_store import DocumentEmbedder
 
 
-DATA_PATH = "data.json"
+DATA_PATH = "data_mock_test.json"
 COLLECTION_NAME = "rag-goldog-ai"
 PERSIST_DIRECTORY = "../backend/infra/vector_stores/storage"
 

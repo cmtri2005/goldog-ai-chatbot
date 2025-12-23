@@ -40,6 +40,12 @@ class DocumentEmbedder:
         uuids = [str(uuid4()) for _ in split_docs]
 
         # 3. Filter complex metadata before storing
+        import json
+        for doc in split_docs:
+            if "image" in doc.metadata and isinstance(doc.metadata["image"], list):
+                doc.metadata["image"] = json.dumps(doc.metadata["image"], ensure_ascii=False)
+
+        
         print("---Filtering complex metadata before storing---")
         filtered_split_docs = filter_complex_metadata(split_docs)
 
